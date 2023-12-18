@@ -1,0 +1,94 @@
+namespace: cobra-enterprise
+
+mongodb:
+  defines: runnable
+  inherits: mongodb/mongodb
+  metadata:
+    name: mongodb
+    description: MongoDB database service required by the backend application.
+    icon: >-
+      https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRA8VbFgxH-i78AZmNqD93mVRkTRd30POqLeCmg9T05ug&s
+  variables:
+    mongo-image:
+      type: string
+      value: latest
+      description: ''
+    mongo-init-database:
+      type: string
+      value: mongo
+      description: ''
+    mongo-init-password:
+      type: string
+      value: password
+      description: ''
+    mongo-init-username:
+      type: string
+      value: mongo
+      description: ''
+    mongodb-image:
+      type: string
+      value: latest
+      description: ''
+
+cobra-enterprise-backend:
+  defines: runnable
+  metadata:
+    name: cobra-enterprise-backend
+    description: Node.js backend application serving API endpoints and static content.
+    icon: https://emojiapi.dev/api/v1/robot.svg
+  containers:
+    cobra-enterprise-backend:
+      image: env-4337.registry.local/cobra-enterprise-backend:master-3e7b8a5
+      build: .
+      dockerfile: Dockerfile
+  services:
+    http-server-port:
+      description: HTTP server listening port
+      container: cobra-enterprise-backend
+      port: 3001
+      host-port: 3001
+      publish: true
+      protocol: tcp
+  connections:
+    database-connection:
+      target: cobra-enterprise/mongodb
+      service: mongodb
+      optional: true
+      description: Connection to the MongoDB database service
+  variables:
+    mongo-initdb-extra-args:
+      env: MONGO_INITDB_EXTRA_ARGS
+      type: string
+      value: '--authenticationDatabase admin'
+      description: Extra arguments for MongoDB initialization
+    db-host:
+      env: DB_HOST
+      type: string
+      value: <- connection-hostname("database-connection")
+      description: Hostname for the database
+    db-port:
+      env: DB_PORT
+      type: int
+      value: <- connection-port("database-connection")
+      description: Port for the database connection
+    db-name:
+      env: DB_NAME
+      type: string
+      value: mongo
+      description: Database name
+    db-user:
+      env: DB_USER
+      type: string
+      value: mongo
+      description: Database user
+    db-pass:
+      env: DB_PASS
+      type: string
+      value: password
+      description: Database password
+
+stack:
+  defines: group
+  members:
+    - cobra-enterprise/mongodb
+    - cobra-enterprise/cobra-enterprise-backend
